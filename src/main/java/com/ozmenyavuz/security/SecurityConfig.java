@@ -37,19 +37,30 @@ public class SecurityConfig {
         this.passwordEncoder = passwordEncoder;
     }
 
+
+    public static final String[] SWAGGER_PATHS = {
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-ui.html"
+    };
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(x ->
-                        x.requestMatchers(
-                                "/auth/welcome/**",
-                                "/auth/addNewUser/**",
-                                "/auth/generateToken").permitAll()
-                )
-                .authorizeHttpRequests(x ->
-                        x.requestMatchers("/auth/user").authenticated()
+                        x
+                                .requestMatchers(
+                                        "/auth/welcome/**",
+                                        "/auth/addNewUser/**",
+                                        "/auth/generateToken",
+                                        "/auth/register",
+                                        "/auth/login"
+                                ).permitAll()
+                                .requestMatchers(SWAGGER_PATHS).permitAll()
+                                .requestMatchers("/auth/user").authenticated()
                                 .requestMatchers("/auth/admin").hasRole("ADMIN")
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(x -> x.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

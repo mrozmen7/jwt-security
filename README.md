@@ -184,9 +184,21 @@ Each of these approaches is structured and demonstrated in isolation for better 
 Happy coding and clean architecture! 
 ## 😊
 
-___
+___ 
 
-## 🛠️ Technologies & Tools Used
+## Swagger UI (OpenAPI)
+
+### In this project, the REST APIs are documented using Swagger UI (OpenAPI).
+### Secure endpoints can be tested directly through the Swagger interface by providing a valid JWT token.
+___ 
+####  Accessing the Swagger Interface: 
+````aiignore
+ http://localhost:8080/swagger-ui/index.html
+
+````
+
+## 🛠️ Technologies & Tools Used 
+
 
 - ☕ [**JDK 17 or newer**](https://jdk.java.net/17/)  
   Core Java Development Kit used to run and compile the application.

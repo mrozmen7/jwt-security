@@ -1,236 +1,478 @@
-![Register](./images/jwt-1.webp) 
+# JWT Security - Spring Boot Authentication Strategies
 
-___
+A comprehensive Spring Boot demonstration project showcasing three different authentication and authorization approaches using Spring Security. This repository serves as a reference implementation for understanding stateless JWT authentication, database-backed basic auth, and in-memory user management.
 
-# 🔐 JSON Web Tokens (JWT)
+## Project Overview
 
-## 📌 What is JWT?
+This repository demonstrates production-ready authentication patterns in Spring Boot 3.x applications. Each module is independently runnable and showcases a distinct authentication strategy, allowing developers to compare implementations and choose the approach that best fits their use case.
 
-When developing web applications, **user authentication and authorization** are critical for security. To protect our applications from unauthorized users and allow access only to authorized ones, we use various methods — **JWT (JSON Web Tokens)** is one of the most effective solutions at this point.
+**Key Features:**
+- Stateless JWT authentication with custom filters
+- Role-based access control (RBAC)
+- PostgreSQL integration with JPA/Hibernate
+- OpenAPI 3.0 documentation with Swagger UI
+- Secure password encoding with BCrypt
+- Docker-based database setup
+
+## Modules
+
+### 1. **jwt-token** (Main Module)
+**Purpose:** Full-featured JWT-based stateless authentication
+
+**When to use:**
+- Building REST APIs consumed by multiple clients (web, mobile, third-party)
+- Microservices architecture requiring distributed authentication
+- Applications needing scalable, stateless authentication
+- Single Sign-On (SSO) implementations
+
+**Key Components:**
+- Custom `JwtAuthFilter` intercepting requests
+- Token generation and validation via `JwtService`
+- 2-minute token expiration (configurable)
+- Database-backed user storage
+
+---
+
+### 2. **basic-auto**
+**Purpose:** Traditional HTTP Basic Authentication with database persistence
+
+**When to use:**
+- Internal tools and admin panels
+- Simple authentication requirements
+- Legacy system integration
+- Rapid prototyping
+
+**Key Components:**
+- Spring Security's built-in Basic Auth
+- Session-based authentication
+- PostgreSQL user storage
+- Simplified security configuration
 
 ---
 
-## ✅ Why JWT?
+### 3. **in-memory**
+**Purpose:** In-memory authentication without database dependency
 
-JWT offers several advantages over its alternatives:
+**When to use:**
+- Local development and testing
+- Proof-of-concepts
+- Educational purposes
+- Temporary demos
 
-- **Compact Structure**  
-  Unlike XML-based alternatives, JWT uses JSON, making it much more lightweight and easier to transfer over HTTP.
+**Key Components:**
+- Hardcoded user credentials in configuration
+- No external dependencies
+- Fastest startup time
 
-- **Easy Parsing**  
-  Most programming languages offer native support or libraries for parsing JSON. Developers generally prefer JSON due to its simplicity and ability to easily map into objects within their application code.
+## Tech Stack
 
-- **Cross-Domain Usage**  
-  A single JWT can be used across multiple domains for authentication. This makes it highly suitable for **Single Sign-On (SSO)** mechanisms.
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| Java | 17+ | Runtime environment |
+| Spring Boot | 3.4.4 | Application framework |
+| Spring Security | 6.x | Authentication/Authorization |
+| PostgreSQL | 15 | Relational database |
+| JJWT | 0.11.5 | JWT creation and parsing |
+| Lombok | Latest | Boilerplate reduction |
+| SpringDoc OpenAPI | 2.5.0 | API documentation |
+| Docker | Latest | Database containerization |
+| Maven | 3.8+ | Build tool |
 
----
+## Prerequisites
 
-## 📍 Where is JWT Used?
+- **JDK 17** or newer
+- **Maven 3.8+**
+- **Docker** and Docker Compose (for PostgreSQL)
+- **Git**
+- An IDE (IntelliJ IDEA, Eclipse, VS Code)
 
-To put it simply, **JWT is a standard for securely transmitting data between parties as a JSON object**.
+## Quick Start
 
-It is most commonly used in **user authentication** workflows. Once a user is authenticated, the server generates a token and sends it to the client. The client includes this token in subsequent requests. The server validates the token **locally**, without needing to contact another server or perform a database query. This makes authentication fast and scalable.
+Get the JWT module running in under 2 minutes:
 
-Thanks to its small size, a JWT can easily be:
+```bash
+# 1. Clone the repository
+git clone https://github.com/yourusername/jwt-security.git
+cd jwt-security
 
-- Sent via URL
-- Embedded in POST parameters
-- Included in HTTP headers
+# 2. Start PostgreSQL
+docker-compose up -d
 
-This makes JWT ideal for modern web applications that require **stateless, fast, and secure** communication between client and server.
-___ 
+# 3. Build and run
+mvn clean install
+mvn spring-boot:run
 
-## 🧩 Structure of a JSON Web Token
+# 4. Verify
+curl http://localhost:8080/auth/welcome
+```
 
-A JSON Web Token (JWT) consists of **three parts separated by dots (`.`)**: 
+Access Swagger UI: **http://localhost:8080/swagger-ui/index.html**
 
-![Register](./images/j-1.webp) 
+## Build & Run Commands
 
+### JWT Token Module (Default Port: 8080)
 
-___ 
+```bash
+# From project root
+mvn clean install               # Build
+mvn spring-boot:run            # Run
+mvn test                       # Run tests
+mvn spring-boot:run -Dspring-boot.run.arguments=--server.port=8081  # Custom port
+```
 
+### Basic Auth Module
 
----
-## 🔴 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
-### 🔷 Header
+```bash
+cd basic-auto
+mvn spring-boot:run            # Runs on port 8080
+```
 
-The **Header** contains metadata about how the token is generated.
+**Test with curl:**
+```bash
+curl -u username:password http://localhost:8080/private
+```
 
-It typically includes two fields:
+### In-Memory Module
 
-- `alg`: The algorithm used to sign the token (e.g., HS256)
-- `typ`: The type of token (usually `"JWT"`)
+```bash
+cd in-memory
+mvn spring-boot:run            # No database required
+```
 
-Example:
+## Database Setup
 
-```json
-{
-  "alg": "HS256",
-  "typ": "JWT"
-}
-``` 
-Each part is **Base64Url encoded**, and together they form the complete token.
+### PostgreSQL via Docker
 
----
-## 🟣 eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ
+The project includes a `docker-compose.yml` for PostgreSQL 15:
 
-### 🟪 2. Payload
+```bash
+# Start database
+docker-compose up -d
 
-The Payload is a JSON object that contains the claims. This is the data part of the token.
-It can be customized to include extra information such as user details.
-Since this data is readable, sensitive information should not be stored here.
+# View logs
+docker logs jwt-postgres-db
 
-There are three types of claims:
+# Stop database
+docker-compose down
 
-✔️ Registered Claims
+# Reset database (destroys data)
+docker-compose down -v
+```
 
-### These are predefined claims that are recommended for use. Some of the most common are:
-#### • sub: Subject — who the token refers to
-#### •	iss: Issuer — who issued and signed the token
-#### •	aud: Audience — the intended recipient
-#### •	jti: JWT ID — unique identifier for the token
-#### •	exp: Expiration time
-#### •	iat: Issued at time
-#### •	nbf: Not valid before  
+**Connection Details:**
+- **Host:** localhost
+- **Port:** 5433 (mapped from container's 5432)
+- **Database:** postgres
+- **Schema:** jwt (auto-created by Hibernate)
+- **Username:** yvz
+- **Password:** ozm
 
+**⚠️ Security Note:** These credentials are for local development only. Use environment variables or secret management in production.
 
-___ 
+### Schema Management
 
-## 🟦 SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+Hibernate DDL is set to `update` in `application.properties`:
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
 
-## 🟦 3. Signature
+For production, use:
+- `validate` - Verify schema matches entities
+- Flyway/Liquibase for version-controlled migrations
 
-The Signature is generated using the Header, the Payload, and a secret key.
-It ensures that the content has not been tampered with and verifies the authenticity of the token.
+## Architecture
 
-How the Signature is Created 
+### Layered Architecture
 
+All modules follow Spring Boot's standard layered architecture:
 
-___
+```
+┌─────────────────────────────────────┐
+│   Controller Layer (@RestController) │  ← REST endpoints
+├─────────────────────────────────────┤
+│   Service Layer (@Service)          │  ← Business logic
+├─────────────────────────────────────┤
+│   Repository Layer (@Repository)    │  ← Data access (JPA)
+├─────────────────────────────────────┤
+│   Model Layer (@Entity)             │  ← Domain entities
+└─────────────────────────────────────┘
+```
 
-## 🚀 Advantages of JWT (JSON Web Tokens)
+**Additional Layers in JWT Module:**
+- **Security Layer:** `JwtAuthFilter`, `SecurityConfig`
+- **DTO Layer:** Request/Response objects decoupled from entities
 
-1. **Stateless Authentication**  
-   JWTs are **stateless** — there is no session stored on the server or client.  
-   All the required information (user identity, token validity, etc.) is stored **within the token itself**.
+### JWT Authentication Flow
 
-2. **Portability Across Systems**  
-   JWTs are **portable** and can work across multiple backends.  
-   They are not limited to use between only two parties.  
-   This is especially useful when your **web and mobile apps** consume the same API.
+```
+┌─────────┐                    ┌──────────────────┐
+│ Client  │                    │  Spring Boot App │
+└────┬────┘                    └────────┬─────────┘
+     │                                  │
+     │ 1. POST /auth/generateToken     │
+     │    {username, password}          │
+     ├─────────────────────────────────>│
+     │                                  │
+     │                         ┌────────▼─────────┐
+     │                         │ AuthenticationMgr │
+     │                         │  validates creds  │
+     │                         └────────┬─────────┘
+     │                                  │
+     │                         ┌────────▼─────────┐
+     │                         │   JwtService     │
+     │                         │ generates token  │
+     │                         └────────┬─────────┘
+     │                                  │
+     │ 2. Returns JWT token             │
+     │<─────────────────────────────────┤
+     │                                  │
+     │ 3. GET /auth/user                │
+     │    Authorization: Bearer <token> │
+     ├─────────────────────────────────>│
+     │                                  │
+     │                         ┌────────▼─────────┐
+     │                         │  JwtAuthFilter   │
+     │                         │ - Extract token  │
+     │                         │ - Validate       │
+     │                         │ - Load UserDetails│
+     │                         │ - Set SecurityCtx│
+     │                         └────────┬─────────┘
+     │                                  │
+     │                         ┌────────▼─────────┐
+     │                         │  Controller      │
+     │                         │  processes req   │
+     │                         └────────┬─────────┘
+     │                                  │
+     │ 4. Returns protected resource    │
+     │<─────────────────────────────────┤
+     │                                  │
+```
 
-3. **Uses JSON Format**  
-   JWTs use **JSON**, a widely accepted, lightweight, and easily parsable format.  
-   This makes integration simple across different programming environments.
+**Key Security Components:**
 
-4. **Faster Authentication**  
-   Token verification is faster than traditional session-based authorization methods.  
-   There's no need to access a **database** to validate every request.
+1. **`JwtAuthFilter` (OncePerRequestFilter)**
+   - Intercepts every HTTP request
+   - Extracts JWT from `Authorization: Bearer <token>` header
+   - Validates token signature and expiration
+   - Populates `SecurityContextHolder` with authenticated user
 
-5. **No Need for Cookies**  
-   Since JWTs can be stored in **localStorage** or **sessionStorage**, there's no dependency on cookies.  
-   This makes JWT a perfect choice for **mobile applications** as well.  
+2. **`JwtService`**
+   - Token generation with configurable expiration (default: 2 minutes)
+   - HS256 signing algorithm with Base64-encoded secret
+   - Claims extraction and validation
 
-___  
-## 🧱 Architecture
+3. **`SecurityConfig`**
+   - Defines public vs. protected endpoints
+   - Configures STATELESS session management (no server-side sessions)
+   - Registers custom filter before `UsernamePasswordAuthenticationFilter`
+   - CSRF disabled (not needed for stateless APIs)
 
-This project follows the architecture below:
-## 📌 Main Reference
+4. **`UserService` (implements UserDetailsService)**
+   - Loads user from database by username
+   - Integrates with Spring Security's authentication flow
 
-🎥 [**JWT Authentication Explained – YouTube**](https://www.youtube.com/watch?v=JdnwMpP6YhE)  
-___ 
-![Register](./images/j-3.png) 
+### Endpoint Security Matrix
 
-___ 
+| Endpoint | Authentication | Authorization |
+|----------|----------------|---------------|
+| `/auth/welcome` | None (public) | N/A |
+| `/auth/addNewUser` | None (public) | N/A |
+| `/auth/generateToken` | None (public) | N/A |
+| `/auth/user` | JWT required | Authenticated user |
+| `/auth/admin` | JWT required | ROLE_ADMIN only |
+| `/swagger-ui/**` | None (public) | N/A |
 
-## 🐳 Docker Configuration (PostgreSQL)
+## API Usage / Testing
 
-This project uses **PostgreSQL** as the database and runs it inside a Docker container using `docker-compose`.
+### Using Swagger UI (Recommended)
 
-### 🔧 Configuration Overview
+1. **Start the application**
+   ```bash
+   mvn spring-boot:run
+   ```
+
+2. **Open Swagger UI**
+   ```
+   http://localhost:8080/swagger-ui/index.html
+   ```
+
+3. **Register a new user**
+   - Endpoint: `POST /auth/addNewUser`
+   - Request body:
+     ```json
+     {
+       "name": "John Doe",
+       "username": "john",
+       "password": "password123",
+       "roles": ["ROLE_USER"]
+     }
+     ```
+
+4. **Generate JWT token**
+   - Endpoint: `POST /auth/generateToken`
+   - Request body:
+     ```json
+     {
+       "username": "john",
+       "password": "password123"
+     }
+     ```
+   - Copy the returned token
+
+5. **Authorize in Swagger**
+   - Click the **"Authorize"** button (top-right)
+   - Enter: `Bearer <your-token-here>`
+   - Click "Authorize"
+
+6. **Test protected endpoints**
+   - Try `GET /auth/user` (should succeed)
+   - Try `GET /auth/admin` (fails unless user has ROLE_ADMIN)
+
+### Using cURL
+
+```bash
+# 1. Register user
+curl -X POST http://localhost:8080/auth/addNewUser \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Jane","username":"jane","password":"pass123","roles":["ROLE_USER"]}'
+
+# 2. Get token
+TOKEN=$(curl -X POST http://localhost:8080/auth/generateToken \
+  -H "Content-Type: application/json" \
+  -d '{"username":"jane","password":"pass123"}' | tr -d '"')
+
+# 3. Access protected endpoint
+curl http://localhost:8080/auth/user \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Token Expiration
+
+Tokens expire after **2 minutes** by default (configured in `JwtService.java:60`). To modify:
+
+```java
+.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 30)) // 30 minutes
+```
+
+## CI (GitHub Actions)
+
+This repository includes a GitHub Actions workflow that runs on every push and pull request.
+
+### Required Files Check
+
+The CI pipeline enforces the presence of documentation files to maintain code quality:
 
 ```yaml
-services:
-  db:
-    image: postgres:15
-    restart: always
-    container_name: jwt-postgres-db
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: yvz
-      POSTGRES_PASSWORD: ozm
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+- name: Check required files exist
+  run: |
+    test -f README.md || (echo "README.md is missing" && exit 1)
+    test -f CLAUDE.md || (echo "CLAUDE.md is missing" && exit 1)
+```
 
-volumes:
-  postgres_data:
-  
-  ``` 
-___
+**Why these files matter:**
+- **README.md** - Onboarding documentation for developers
+- **CLAUDE.md** - AI-assisted development context (guides Claude Code CLI)
 
-## 🔚 Conclusion
+If either file is missing, the CI build will fail. This ensures that:
+1. The project remains self-documenting
+2. AI tools have proper context for code assistance
+3. New contributors can quickly understand the architecture
 
-In this project, three different authentication strategies have been explored and implemented separately:
+### CI Workflow
 
-- 🔐 **Basic Authentication with Auto Configuration**
-- 🧠 **In-Memory Authentication**
-- 🔑 **JWT (JSON Web Token) Based Authentication**
+The pipeline performs:
+- Compilation check (`mvn compile`)
+- Unit test execution (`mvn test`)
+- Documentation validation (README.md, CLAUDE.md presence)
 
-Each of these approaches is structured and demonstrated in isolation for better understanding and flexibility.
+## Common Pitfalls
 
-Happy coding and clean architecture! 
-## 😊
+### 1. Database Connection Failed
+**Problem:** `Connection to localhost:5433 refused`
 
-___ 
+**Solution:**
+```bash
+# Check if PostgreSQL container is running
+docker ps | grep jwt-postgres-db
 
-## Swagger UI (OpenAPI)
+# If not running
+docker-compose up -d
 
-### In this project, the REST APIs are documented using Swagger UI (OpenAPI).
-### Secure endpoints can be tested directly through the Swagger interface by providing a valid JWT token.
-___ 
-####  Accessing the Swagger Interface: 
-````aiignore
- http://localhost:8080/swagger-ui/index.html
+# Check logs
+docker logs jwt-postgres-db
+```
 
-````
+---
 
-## 🛠️ Technologies & Tools Used 
+### 2. JWT Token Invalid or Expired
+**Problem:** `401 Unauthorized` on protected endpoints
 
+**Solution:**
+- Tokens expire in 2 minutes by default
+- Generate a new token via `/auth/generateToken`
+- Ensure header format is exactly: `Authorization: Bearer <token>`
+- No extra spaces before/after token
 
-- ☕ [**JDK 17 or newer**](https://jdk.java.net/17/)  
-  Core Java Development Kit used to run and compile the application.
+---
 
-- 🧱 [**Maven**](https://maven.apache.org/)  
-  Dependency management and build automation tool.
+### 3. Port 5433 Already in Use
+**Problem:** PostgreSQL fails to start
 
-- 🐘 [**PostgreSQL**](https://www.postgresql.org/)  
-  Open-source relational database used to store application data.
+**Solution:**
+```bash
+# Find process using port 5433
+lsof -i :5433
 
-- ✨ [**Lombok**](https://projectlombok.org/)  
-  Reduces boilerplate code in Java (e.g., getters, setters, constructors).
+# Kill process or change port in docker-compose.yml
+ports:
+  - "5434:5432"  # Use 5434 instead
 
-- 🧩 [**JPA (Java Persistence API)**](https://jakarta.ee/specifications/persistence/)  
-  Abstraction layer for database access and ORM.
+# Update application.properties accordingly
+spring.datasource.url=jdbc:postgresql://localhost:5434/postgres
+```
 
-- 🐳 [**Docker**](https://www.docker.com/)  
-  Used to containerize the application and database for consistent deployment.
+---
 
-- 🔐 [**JWT (JSON Web Tokens)**](https://jwt.io/)  
-  Secure token-based authentication mechanism used for stateless user sessions.
+### 4. Schema "jwt" Does Not Exist
+**Problem:** SQL errors on startup
 
-___
+**Solution:**
+- With `spring.jpa.hibernate.ddl-auto=update`, Hibernate creates the schema automatically
+- If using `validate`, manually create schema:
+  ```sql
+  CREATE SCHEMA IF NOT EXISTS jwt;
+  ```
 
-## 📚 Resources & References
+---
 
-- 📘 [JWT (JSON Web Token) Nedir, Nerede Kullanılır? – Medium](https://medium.com/@latestsoftwaredevelopers/jwt-json-web-token-nedir-nerede-kullan%C4%B1l%C4%B1r-67bface90c35)  
-  A Turkish-language article explaining what JWT is and where it's used.
+### 5. Lombok Not Working in IDE
+**Problem:** Cannot find getters/setters/constructors
 
-- 📘 [Spring Security - JWT Resource Server Documentation](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html)  
-  Official Spring documentation on how to use JWT in a Spring Security resource server.
+**Solution:**
+- Install Lombok plugin for your IDE
+- Enable annotation processing:
+  - **IntelliJ:** Settings → Build, Execution, Deployment → Compiler → Annotation Processors → Enable
+  - **Eclipse:** Install Lombok via `lombok.jar`
 
-- 🎥 [JWT Explained – YouTube](https://www.youtube.com/watch?v=JdnwMpP6YhE)  
-  A beginner-friendly video explaining how JWT works, its structure, and use cases. 
+---
 
+### 6. CSRF Token Missing (Basic Auth Module)
+**Problem:** `403 Forbidden` on POST requests
+
+**Solution:**
+- The JWT module disables CSRF (stateless)
+- Basic auth module may require CSRF tokens for POST/PUT/DELETE
+- For testing, you can disable CSRF (NOT recommended for production):
+  ```java
+  .csrf(AbstractHttpConfigurer::disable)
+  ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+**Maintained by:** [Your Name/Organization]
+**Questions?** Open an issue on GitHub
+**Contributions:** PRs welcome! Please read CONTRIBUTING.md first.

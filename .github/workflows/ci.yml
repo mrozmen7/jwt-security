@@ -15,3 +15,4 @@ jobs:
       - name: Required files must exist
         run: |
           test -f README.md
+          test -f CLAUDE.md
